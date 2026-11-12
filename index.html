@@ -208,31 +208,42 @@
       if (e.key === 'Enter') send();
     });
 
-    const BASE = ''; // Unified origin via Cloudflare Pages Function
+    // Support both local mobile file opening and Cloudflare Pages origin
+    const BASE = (window.location.protocol === 'file:' || !window.location.origin || window.location.origin === 'null') 
+      ? 'https://deepseek-32b-rag.pages.dev' 
+      : '';
 
     // Check Backend Status
     async function checkHealth() {
+      const dot = document.getElementById('dot');
+      const statusEl = document.getElementById('status');
       try {
-        const res = await fetch(BASE + '/health');
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 6000);
+        const res = await fetch(BASE + '/health', { signal: ctrl.signal });
+        clearTimeout(tid);
+
         if (res.ok) {
           const d = await res.json();
           if (d.model_ready) {
-            document.getElementById('status').innerText = 'DeepSeek-R1 32B Uncensored • Dual T4 Active';
-            document.getElementById('dot').style.background = '#10b981';
+            statusEl.innerText = 'DeepSeek-R1 32B Uncensored • Dual T4 Active';
+            dot.style.background = '#10b981';
           } else {
-            document.getElementById('status').innerText = d.model_status || '32B Loading...';
-            document.getElementById('dot').style.background = '#f59e0b';
+            statusEl.innerText = d.model_status || '32B Loading...';
+            dot.style.background = '#f59e0b';
           }
           if (d.rag_total_documents !== undefined) {
             document.getElementById('ragCount').innerText = `${d.rag_total_documents} Chunks Indexed`;
           }
+          return;
         }
       } catch (e) {
-        document.getElementById('status').innerText = 'Syncing cluster...';
-        document.getElementById('dot').style.background = '#f59e0b';
+        // network or timeout
       }
+      statusEl.innerText = 'Syncing cluster (Retrying...)';
+      dot.style.background = '#f59e0b';
     }
-    setInterval(checkHealth, 10000);
+    setInterval(checkHealth, 5000);
     checkHealth();
 
     // RAG Upload
