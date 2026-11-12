@@ -243,7 +243,7 @@
       statusEl.innerText = 'Syncing cluster (Retrying...)';
       dot.style.background = '#f59e0b';
     }
-    setInterval(checkHealth, 5000);
+    setInterval(checkHealth, 15000);
     checkHealth();
 
     // RAG Upload
@@ -301,8 +301,14 @@
 
       appendMsg('user', text);
       history.push({role: 'user', content: text});
+      if (history.length > 6) history = history.slice(-6);
 
-      const aiMsg = appendMsg('ai', '<span class="cursor">⏳ Connecting to 32B model...</span>');
+      const aiMsg = appendMsg('ai', '<span class="cursor">⚡ DeepSeek 32B is processing...</span>');
+      const statusTimer = setTimeout(() => {
+        if (isSending && !aiMsg.querySelector('details') && !aiMsg.querySelector('div')) {
+          aiMsg.innerHTML = '<span class="cursor">🧠 Thinking across Dual Tesla T4 GPUs...</span>';
+        }
+      }, 2500);
 
       try {
         const res = await fetch(BASE + '/v1/chat/completions', {
@@ -317,7 +323,15 @@
           })
         });
 
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        if (!res.ok) {
+          const errText = await res.text();
+          let msg = 'HTTP ' + res.status;
+          try {
+            const ej = JSON.parse(errText);
+            if (ej.error) msg = ej.error;
+          } catch(e) {}
+          throw new Error(msg);
+        }
 
         const contentType = res.headers.get('content-type') || '';
         if (contentType.includes('text/event-stream')) {
@@ -332,6 +346,8 @@
           while (!streamFinished) {
             const {done, value} = await reader.read();
             if (done) break;
+
+            clearTimeout(statusTimer);
 
             sseBuffer += decoder.decode(value, {stream: true});
             const lines = sseBuffer.split('\n');
@@ -375,20 +391,27 @@
 
           // Finalize stream rendering
           renderLiveStream(aiMsg, reasoningBuffer, contentBuffer, false, true);
-          const assistantReply = contentBuffer || (reasoningBuffer ? `[Thought Process]:\n${reasoningBuffer}` : 'Done.');
-          history.push({role: 'assistant', content: assistantReply});
+
+          // Only store clean answer in history for rapid multi-turn prefill
+          const cleanAnswer = contentBuffer || (reasoningBuffer ? reasoningBuffer : 'Done.');
+          history.push({role: 'assistant', content: cleanAnswer});
+          if (history.length > 6) history = history.slice(-6);
 
         } else {
+          clearTimeout(statusTimer);
           // Standard JSON Fallback
           const data = await res.json();
           const content = data.choices[0].message.content || data.choices[0].message.reasoning_content || '';
           history.push({role: 'assistant', content: content});
+          if (history.length > 6) history = history.slice(-6);
           renderAiResponse(aiMsg, content);
         }
 
       } catch (err) {
-        aiMsg.innerHTML = `⚠️ <b>Error:</b> ${err.message}<br><small>Worker busy or reconnecting, please retry in a moment.</small>`;
+        clearTimeout(statusTimer);
+        aiMsg.innerHTML = `⚠️ <b>Error:</b> ${escapeHtml(err.message)}<br><small>Please retry your message.</small>`;
       } finally {
+        clearTimeout(statusTimer);
         clearTimeout(watchdog);
         isSending = false;
         sendBtn.disabled = false;

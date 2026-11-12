@@ -43,30 +43,8 @@ export async function onRequest(context) {
     // ignore
   }
 
-  // 2. Optimized /health endpoint: returns immediately, falls back to Firebase cluster state
+  // 2. Instant /health endpoint: Served 100% from Firebase cluster state (Zero Kaggle load)
   if (url.pathname === '/health') {
-    if (backendUrl) {
-      try {
-        const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 3500);
-        const upRes = await fetch(`${backendUrl}/health`, { signal: ctrl.signal });
-        clearTimeout(tid);
-        if (upRes.ok) {
-          const bodyText = await upRes.text();
-          return new Response(bodyText, {
-            status: 200,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-              "Cache-Control": "no-cache, no-store, must-revalidate"
-            }
-          });
-        }
-      } catch (e) {
-        // Fallback to clusterData
-      }
-    }
-
     return new Response(JSON.stringify({
       status: "healthy",
       gpu: clusterData?.gpu_device || "2x Tesla T4 (Dual-GPU Parallelism: 50% GPU 0 + 50% GPU 1)",
