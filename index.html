@@ -290,6 +290,15 @@
       isSending = true;
       sendBtn.disabled = true;
 
+      // Watchdog failsafe: guarantee send button unlocks even if network drops
+      const watchdog = setTimeout(() => {
+        if (isSending) {
+          isSending = false;
+          sendBtn.disabled = false;
+          promptInput.focus();
+        }
+      }, 45000);
+
       appendMsg('user', text);
       history.push({role: 'user', content: text});
 
@@ -318,8 +327,9 @@
           let reasoningBuffer = '';
           let contentBuffer = '';
           let sseBuffer = '';
+          let streamFinished = false;
 
-          while (true) {
+          while (!streamFinished) {
             const {done, value} = await reader.read();
             if (done) break;
 
@@ -329,11 +339,19 @@
 
             for (const line of lines) {
               const trimmed = line.trim();
-              if (!trimmed || trimmed.startsWith(':') || trimmed === 'data: [DONE]') continue;
+              if (!trimmed || trimmed.startsWith(':')) continue;
+
+              // Immediately break on [DONE] marker so reader doesn't hang on keep-alive connection
+              if (trimmed === 'data: [DONE]') {
+                streamFinished = true;
+                break;
+              }
+
               if (trimmed.startsWith('data: ')) {
                 try {
                   const parsed = JSON.parse(trimmed.slice(6));
-                  const delta = parsed.choices?.[0]?.delta || {};
+                  const choice = parsed.choices?.[0] || {};
+                  const delta = choice.delta || {};
 
                   if (delta.reasoning_content) {
                     reasoningBuffer += delta.reasoning_content;
@@ -343,27 +361,35 @@
                     contentBuffer += delta.content;
                     renderLiveStream(aiMsg, reasoningBuffer, contentBuffer, false);
                   }
+
+                  if (choice.finish_reason === 'stop' || choice.finish_reason === 'length') {
+                    streamFinished = true;
+                  }
                 } catch(e) {}
               }
             }
           }
 
+          // Safely release reader stream lock
+          try { await reader.cancel(); } catch(e) {}
+
           // Finalize stream rendering
           renderLiveStream(aiMsg, reasoningBuffer, contentBuffer, false, true);
-          const fullResponse = (reasoningBuffer ? `<think>\n${reasoningBuffer}\n</think>\n\n` : '') + contentBuffer;
-          history.push({role: 'assistant', content: fullResponse});
+          const assistantReply = contentBuffer || (reasoningBuffer ? `[Thought Process]:\n${reasoningBuffer}` : 'Done.');
+          history.push({role: 'assistant', content: assistantReply});
 
         } else {
           // Standard JSON Fallback
           const data = await res.json();
-          const content = data.choices[0].message.content;
+          const content = data.choices[0].message.content || data.choices[0].message.reasoning_content || '';
           history.push({role: 'assistant', content: content});
           renderAiResponse(aiMsg, content);
         }
 
       } catch (err) {
-        aiMsg.innerHTML = `⚠️ <b>Error:</b> ${err.message}<br><small>Kaggle worker starting up, retrying shortly...</small>`;
+        aiMsg.innerHTML = `⚠️ <b>Error:</b> ${err.message}<br><small>Worker busy or reconnecting, please retry in a moment.</small>`;
       } finally {
+        clearTimeout(watchdog);
         isSending = false;
         sendBtn.disabled = false;
         promptInput.focus();
