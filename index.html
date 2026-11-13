@@ -100,26 +100,54 @@
       border-bottom-left-radius: 2px;
       border: 1px solid #374151;
     }
-    details {
+    details.think-box {
       background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      padding: 6px 10px;
-      margin-bottom: 8px;
-      font-size: 12px;
+      border: 1px solid #1e293b;
+      border-left: 3px solid #38bdf8;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      font-size: 13px;
     }
-    summary {
+    details.think-box summary {
       cursor: pointer;
       color: #38bdf8;
       font-weight: 600;
       user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    pre {
-      margin-top: 6px;
+    details.think-box pre {
+      margin-top: 8px;
       color: #94a3b8;
       white-space: pre-wrap;
-      font-family: monospace;
-      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      background: #090d16;
+      padding: 10px;
+      border-radius: 6px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .final-content {
+      line-height: 1.6;
+      font-size: 14px;
+      color: #f1f5f9;
+      word-break: break-word;
+    }
+    .pulse-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      background: #38bdf8;
+      border-radius: 50%;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.8); opacity: 0.5; }
+      50% { transform: scale(1.3); opacity: 1; }
     }
     .cursor {
       display: inline-block;
@@ -297,7 +325,7 @@
           sendBtn.disabled = false;
           promptInput.focus();
         }
-      }, 45000);
+      }, 120000);
 
       appendMsg('user', text);
       history.push({role: 'user', content: text});
@@ -431,14 +459,31 @@
     function renderLiveStream(elem, reasoning, content, isThinkingNow, isFinished = false) {
       let html = '';
       if (reasoning) {
-        html += `<details><summary>🧠 Thought Process ${isThinkingNow ? '⏳ (Thinking...)' : '✓ (Ready)'}</summary><pre>${escapeHtml(reasoning)}</pre></details>`;
+        // While thinking, keep the box OPEN so the user watches live thoughts in real-time
+        const isOpen = isThinkingNow || !content ? 'open' : '';
+        const title = isThinkingNow 
+          ? '🧠 DeepSeek-R1 Thinking <span class="pulse-dot"></span> <small style="color:#38bdf8;">(Live stream)</small>' 
+          : '🧠 Thought Process ✓ <small style="color:#64748b;">(Click to collapse/expand)</small>';
+        
+        html += `<details class="think-box" ${isOpen}>
+          <summary>${title}</summary>
+          <pre id="thinkPre">${escapeHtml(reasoning)}${isThinkingNow ? '<span class="cursor">▊</span>' : ''}</pre>
+        </details>`;
       }
+
       if (content) {
-        html += `<div>${formatText(content)}${isFinished ? '' : '<span class="cursor">▊</span>'}</div>`;
+        html += `<div class="final-content">${formatText(content)}${isFinished ? '' : '<span class="cursor">▊</span>'}</div>`;
       } else if (!reasoning) {
-        html += `<span class="cursor">⏳ Thinking...</span>`;
+        html += `<span class="cursor">🧠 DeepSeek-R1 is thinking across Dual Tesla T4 GPUs...</span>`;
       }
+
       elem.innerHTML = html;
+
+      // Auto-scroll the thinking pre box to bottom as new tokens arrive
+      const pre = elem.querySelector('#thinkPre');
+      if (pre && isThinkingNow) {
+        pre.scrollTop = pre.scrollHeight;
+      }
       chat.scrollTop = chat.scrollHeight;
     }
 
@@ -453,9 +498,16 @@
 
       let html = '';
       if (think) {
-        html += `<details><summary>🧠 DeepSeek-R1 Thinking ✓</summary><pre>${escapeHtml(think)}</pre></details>`;
+        html += `<details class="think-box" ${answer ? '' : 'open'}>
+          <summary>🧠 Thought Process ✓ <small style="color:#64748b;">(Click to view)</small></summary>
+          <pre>${escapeHtml(think)}</pre>
+        </details>`;
       }
-      html += `<div>${formatText(answer)}</div>`;
+      if (answer) {
+        html += `<div class="final-content">${formatText(answer)}</div>`;
+      } else if (think) {
+        html += `<div class="final-content" style="color: #94a3b8; font-style: italic;">(Response contained in thought process above)</div>`;
+      }
       elem.innerHTML = html;
       chat.scrollTop = chat.scrollHeight;
     }
