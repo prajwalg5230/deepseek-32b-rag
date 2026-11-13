@@ -49,9 +49,9 @@ export async function onRequest(context) {
       status: "healthy",
       gpu: clusterData?.gpu_device || "2x Tesla T4 (Dual-GPU Parallelism: 50% GPU 0 + 50% GPU 1)",
       model_ready: clusterData ? (clusterData.model_ready ?? true) : true,
-      model_name: "DeepSeek-R1-Distill-Qwen-32B-abliterated",
+      model_name: clusterData?.model_name || "Swift-Qwen3.8-27B-Abliterated",
       gpu_sharding: clusterData?.gpu_sharding || "Tensor-Split: 50% cuda:0, 50% cuda:1",
-      model_status: "Online (32B Dual-GPU)",
+      model_status: clusterData?.status === "ONLINE" ? "Online (Qwen 3.8 27B Dual-GPU)" : "Syncing cluster...",
       rag_total_documents: clusterData?.rag_docs_count || 0
     }), {
       status: 200,
@@ -67,7 +67,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({
       status: "connecting",
       error: "Kaggle Dual-GPU worker tunnel is synchronizing or rotating. Please retry in 10-20 seconds.",
-      model_name: "DeepSeek-R1-Distill-Qwen-32B-abliterated",
+      model_name: "Swift-Qwen3.8-27B-Abliterated",
       model_ready: false
     }), {
       status: 503,

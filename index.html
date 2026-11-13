@@ -193,7 +193,7 @@
   <header>
     <div class="status-badge">
       <span class="dot" id="dot"></span>
-      <span id="status">DeepSeek-R1 32B Uncensored (Connecting...)</span>
+      <span id="status">Qwen 3.8 27B Uncensored (Connecting...)</span>
     </div>
     <div style="font-size: 12px; color: #9ca3af;">
       <span id="ragCount">0 Chunks Indexed</span> • Hybrid RAG
@@ -213,9 +213,9 @@
   <!-- Chat Area -->
   <div id="chat">
     <div class="msg ai">
-      👋 <b>DeepSeek-R1 32B Uncensored (Abliterated) Active!</b><br>
-      Full 32 Billion model weights 50% GPU 0 (cuda:0) aur 50% GPU 1 (cuda:1) par C++ CUDA engine ke sath sharded hain.<br>
-      <b>Enterprise Hybrid RAG (Dense + BM25)</b> active hai. Bina kisi censorship ke koi bhi sawaal pucho!
+      👋 <b>Swift-Qwen 3.8 27B Uncensored (Abliterated) Active!</b><br>
+      High-Speed 27 Billion weights 50% GPU 0 (cuda:0) aur 50% GPU 1 (cuda:1) par C++ CUDA engine ke sath sharded hain.<br>
+      <b>Zero Censorship • Fast Direct Responses • Enterprise Hybrid RAG</b>. Koi bhi sawaal pucho!
     </div>
   </div>
 
@@ -254,10 +254,10 @@
         if (res.ok) {
           const d = await res.json();
           if (d.model_ready) {
-            statusEl.innerText = 'DeepSeek-R1 32B Uncensored • Dual T4 Active';
+            statusEl.innerText = 'Qwen 3.8 27B Uncensored • Dual T4 Active';
             dot.style.background = '#10b981';
           } else {
-            statusEl.innerText = d.model_status || '32B Loading...';
+            statusEl.innerText = d.model_status || '27B Loading...';
             dot.style.background = '#f59e0b';
           }
           if (d.rag_total_documents !== undefined) {
