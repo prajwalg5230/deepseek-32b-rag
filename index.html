@@ -2,34 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DeepSeek-R1 32B Uncensored • Dual T4 RAG AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Swift-Qwen 3.8 27B Uncensored • Dual T4 Hybrid RAG AI</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080c14;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+      --border-focus: #38bdf8;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #10b981;
+      --accent: #38bdf8;
+      --code-bg: #050811;
+    }
     body {
-      background: #0b0f17;
-      color: #e2e8f0;
-      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       display: flex;
       flex-direction: column;
       height: 100dvh;
+      overflow: hidden;
     }
+
+    /* Header */
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
-      padding: 10px 16px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 8px;
+      z-index: 20;
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
     .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
     .dot {
       width: 9px;
@@ -37,76 +61,140 @@
       border-radius: 50%;
       background: #f59e0b;
       display: inline-block;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+      transition: background 0.3s, box-shadow 0.3s;
     }
+    .dot.online {
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+    }
+    .subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .control-select {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+    .control-select:focus { border-color: var(--accent); }
+    .icon-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: var(--text);
+      padding: 5px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .icon-btn:hover { background: #334155; border-color: #475569; }
+
+    /* RAG Box */
     .rag-box {
-      background: #161f30;
-      border-bottom: 1px solid #1f2937;
-      padding: 8px 16px;
+      background: rgba(17, 24, 39, 0.75);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 14px;
       display: flex;
       gap: 8px;
       align-items: center;
       flex-wrap: wrap;
       font-size: 12px;
+      z-index: 10;
     }
     .rag-box input[type="text"] {
       flex: 1;
-      min-width: 180px;
-      background: #1f2937;
-      border: 1px solid #374151;
+      min-width: 160px;
+      background: #1e293b;
+      border: 1px solid #334155;
       color: #fff;
       padding: 6px 10px;
       border-radius: 6px;
       font-size: 12px;
+      outline: none;
     }
+    .rag-box input[type="text"]:focus { border-color: var(--accent); }
     .btn {
-      background: #2563eb;
+      background: var(--primary);
       color: #fff;
       border: none;
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
+      transition: background 0.2s;
     }
-    .btn:hover { background: #1d4ed8; }
-    .btn-clear { background: #374151; }
-    .btn-clear:hover { background: #4b5563; }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+    .btn-secondary:hover { background: #475569; }
+
+    /* Chat Area */
     #chat {
       flex: 1;
       overflow-y: auto;
       padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
+      scroll-behavior: smooth;
     }
+    #chat::-webkit-scrollbar { width: 6px; }
+    #chat::-webkit-scrollbar-track { background: transparent; }
+    #chat::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
     .msg {
-      max-width: 85%;
-      padding: 10px 14px;
+      max-width: 90%;
+      padding: 12px 16px;
       border-radius: 12px;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.6;
       word-break: break-word;
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .user {
       align-self: flex-end;
-      background: #1e3a8a;
-      color: #fff;
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #ffffff;
       border-bottom-right-radius: 2px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
     }
     .ai {
       align-self: flex-start;
-      background: #1f2937;
-      color: #e5e7eb;
+      background: var(--card-bg);
+      color: #e2e8f0;
       border-bottom-left-radius: 2px;
-      border: 1px solid #374151;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     }
+
+    /* Thinking Process Details Box */
     details.think-box {
-      background: #0f172a;
+      background: #090e1a;
       border: 1px solid #1e293b;
       border-left: 3px solid #38bdf8;
       border-radius: 8px;
       padding: 8px 12px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       font-size: 13px;
     }
     details.think-box summary {
@@ -122,21 +210,73 @@
       margin-top: 8px;
       color: #94a3b8;
       white-space: pre-wrap;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size: 12px;
       line-height: 1.55;
-      background: #090d16;
+      background: #04070e;
       padding: 10px;
       border-radius: 6px;
-      max-height: 280px;
+      max-height: 260px;
       overflow-y: auto;
+      border: 1px solid #131b2e;
     }
-    .final-content {
-      line-height: 1.6;
-      font-size: 14px;
-      color: #f1f5f9;
-      word-break: break-word;
+
+    /* Code Blocks */
+    .code-wrapper {
+      margin: 10px 0;
+      background: var(--code-bg);
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
     }
+    .code-header {
+      background: #111827;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #94a3b8;
+      border-bottom: 1px solid #1e293b;
+      font-family: ui-monospace, monospace;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .copy-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: #334155; }
+    .code-wrapper pre {
+      padding: 12px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #e2e8f0;
+    }
+    .inline-code {
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+    }
+    .quote {
+      border-left: 3px solid #475569;
+      padding-left: 10px;
+      color: #94a3b8;
+      margin: 6px 0;
+      font-style: italic;
+    }
+
     .pulse-dot {
       display: inline-block;
       width: 7px;
@@ -156,72 +296,115 @@
       animation: blink 0.8s infinite;
     }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* Footer */
     footer {
-      padding: 12px 16px;
-      background: #111827;
-      border-top: 1px solid #1f2937;
+      padding: 10px 14px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
       display: flex;
       gap: 8px;
+      align-items: center;
+      z-index: 20;
     }
     #prompt {
       flex: 1;
-      background: #1f2937;
-      border: 1px solid #374151;
+      background: #1e293b;
+      border: 1px solid #334155;
       color: #fff;
-      padding: 10px 14px;
-      border-radius: 8px;
+      padding: 11px 16px;
+      border-radius: 10px;
       font-size: 14px;
       outline: none;
+      transition: border-color 0.2s;
     }
-    #prompt:focus { border-color: #3b82f6; }
+    #prompt:focus { border-color: var(--border-focus); }
+    #micBtn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #micBtn:hover { background: #334155; }
+    #micBtn.listening {
+      background: #dc2626;
+      border-color: #ef4444;
+      color: #fff;
+      animation: pulse 1s infinite;
+    }
     #send {
-      background: #10b981;
+      background: linear-gradient(135deg, #10b981, #059669);
       color: #fff;
       border: none;
       padding: 0 18px;
-      border-radius: 8px;
+      height: 42px;
+      border-radius: 10px;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.2s;
     }
-    #send:hover { background: #059669; }
-    #send:disabled { opacity: 0.5; cursor: not-allowed; }
+    #send:hover { opacity: 0.9; transform: translateY(-1px); }
+    #send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   </style>
 </head>
 <body>
 
-  <!-- Top Bar -->
+  <!-- Top Navigation Header -->
   <header>
-    <div class="status-badge">
-      <span class="dot" id="dot"></span>
-      <span id="status">Qwen 3.8 27B Uncensored (Connecting...)</span>
+    <div class="header-left">
+      <div class="status-badge">
+        <span class="dot" id="dot"></span>
+        <span id="status">Swift-Qwen 3.8 27B Uncensored (Connecting...)</span>
+      </div>
+      <div class="subtitle">
+        <span id="ragCount">0 Chunks</span> • 2x Tesla T4 • 32K Context • Dual-GPU Sharded
+      </div>
     </div>
-    <div style="font-size: 12px; color: #9ca3af;">
-      <span id="ragCount">0 Chunks Indexed</span> • Hybrid RAG
+    <div class="header-right">
+      <select id="thinkMode" class="control-select" title="Thinking Depth">
+        <option value="fast" selected>🟡 Fast Think</option>
+        <option value="off">⚡ Direct (No Think)</option>
+        <option value="deep">🔬 Deep Think</option>
+      </select>
+      <button class="icon-btn" onclick="exportChat()" title="Export Conversation">📥 Export</button>
+      <button class="icon-btn" onclick="clearChat()" title="Clear Chat History">🗑️ Clear</button>
     </div>
   </header>
 
   <!-- Lightweight RAG Ingestion Bar -->
   <div class="rag-box">
-    <span>📚 RAG Docs:</span>
-    <input type="text" id="ragInput" placeholder="Paste text, notes, code or book summary to index...">
+    <span>📚 <b>RAG:</b></span>
+    <input type="text" id="ragInput" placeholder="Paste notes, book, code or doc summary...">
     <input type="file" id="ragFile" style="display:none;" onchange="loadFile(event)">
-    <button class="btn btn-clear" onclick="document.getElementById('ragFile').click()">📎 File</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('ragFile').click()">📎 File</button>
     <button class="btn" onclick="addRag()">⚡ Index</button>
-    <button class="btn btn-clear" onclick="clearRag()">🧹 Clear</button>
+    <button class="btn btn-secondary" onclick="clearRag()">🧹 Clear</button>
   </div>
 
-  <!-- Chat Area -->
+  <!-- Chat Scroll Area -->
   <div id="chat">
     <div class="msg ai">
       👋 <b>Swift-Qwen 3.8 27B Uncensored (Abliterated) Active!</b><br>
       High-Speed 27 Billion weights 50% GPU 0 (cuda:0) aur 50% GPU 1 (cuda:1) par C++ CUDA engine ke sath sharded hain.<br>
-      <b>Zero Censorship • Fast Direct Responses • Enterprise Hybrid RAG</b>. Koi bhi sawaal pucho!
+      <b>Zero Censorship • 32K Massive Context • Q8_0 KV Cache • 4 vCPU Multithreading</b>.<br>
+      Thinking mode selector, voice input (mic), aur 1-click code copying ready hai. Koi bhi sawaal pucho!
     </div>
   </div>
 
   <!-- Input Footer -->
   <footer>
-    <input type="text" id="prompt" placeholder="Type your message..." autocomplete="off">
+    <input type="text" id="prompt" placeholder="Type your message or click 🎙️ to speak..." autocomplete="off">
+    <button id="micBtn" onclick="toggleVoice()" title="Voice Input (Microphone)">🎙️</button>
     <button id="send" onclick="send()">Send</button>
   </footer>
 
@@ -229,6 +412,7 @@
     const chat = document.getElementById('chat');
     const promptInput = document.getElementById('prompt');
     const sendBtn = document.getElementById('send');
+    const thinkModeSelect = document.getElementById('thinkMode');
     let history = [];
     let isSending = false;
 
@@ -254,14 +438,15 @@
         if (res.ok) {
           const d = await res.json();
           if (d.model_ready) {
-            statusEl.innerText = 'Qwen 3.8 27B Uncensored • Dual T4 Active';
-            dot.style.background = '#10b981';
+            statusEl.innerText = 'Swift-Qwen 3.8 27B Uncensored • Online';
+            dot.className = 'dot online';
           } else {
-            statusEl.innerText = d.model_status || '27B Loading...';
+            statusEl.innerText = d.model_status || '27B Sharding...';
+            dot.className = 'dot';
             dot.style.background = '#f59e0b';
           }
           if (d.rag_total_documents !== undefined) {
-            document.getElementById('ragCount').innerText = `${d.rag_total_documents} Chunks Indexed`;
+            document.getElementById('ragCount').innerText = `${d.rag_total_documents} Chunks`;
           }
           return;
         }
@@ -269,6 +454,7 @@
         // network or timeout
       }
       statusEl.innerText = 'Syncing cluster (Retrying...)';
+      dot.className = 'dot';
       dot.style.background = '#f59e0b';
     }
     setInterval(checkHealth, 15000);
@@ -308,6 +494,111 @@
       alert('🧹 Cleared!');
     }
 
+    // Clear Chat
+    function clearChat() {
+      if (!confirm('Clear current chat conversation?')) return;
+      history = [];
+      chat.innerHTML = `
+        <div class="msg ai">
+          👋 <b>Swift-Qwen 3.8 27B Uncensored Active!</b><br>
+          Conversation history cleared. Fresh session started. Koi bhi sawaal pucho!
+        </div>
+      `;
+    }
+
+    // Export Chat
+    function exportChat() {
+      if (!history || history.length === 0) {
+        alert('No conversation to export!');
+        return;
+      }
+      let md = `# Swift-Qwen 3.8 27B Chat Export\nGenerated: ${new Date().toLocaleString()}\n\n---\n\n`;
+      for (const m of history) {
+        const title = m.role === 'user' ? '👤 User' : '🤖 Swift-Qwen 3.8 27B';
+        md += `### ${title}\n\n${m.content}\n\n---\n\n`;
+      }
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qwen_27b_chat_${Date.now()}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Voice Input (Web Speech API)
+    let recognition = null;
+    let isListening = false;
+    function initVoice() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        const btn = document.getElementById('micBtn');
+        if (btn) btn.style.display = 'none';
+        return;
+      }
+      recognition = new SpeechRec();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'hi-IN, en-US';
+
+      recognition.onstart = () => {
+        isListening = true;
+        document.getElementById('micBtn').classList.add('listening');
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        promptInput.value = (promptInput.value ? promptInput.value + ' ' : '') + transcript;
+        promptInput.focus();
+      };
+
+      recognition.onerror = () => {
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('listening');
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('listening');
+      };
+    }
+    initVoice();
+
+    function toggleVoice() {
+      if (!recognition) {
+        alert('Voice input is not supported in this browser.');
+        return;
+      }
+      if (isListening) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    }
+
+    // 1-Click Code Copy
+    window.copyCode = function(btn) {
+      const wrapper = btn.closest('.code-wrapper');
+      if (!wrapper) return;
+      const codeEl = wrapper.querySelector('code');
+      if (!codeEl) return;
+      navigator.clipboard.writeText(codeEl.innerText).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = '✓ Copied!';
+        btn.style.background = '#10b981';
+        btn.style.borderColor = '#10b981';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.background = '';
+          btn.style.borderColor = '';
+        }, 2000);
+      }).catch(() => {
+        btn.innerText = 'Error';
+      });
+    };
+
     // Send Chat with Real-Time Live Streaming
     async function send() {
       if (isSending) return;
@@ -318,7 +609,7 @@
       isSending = true;
       sendBtn.disabled = true;
 
-      // Watchdog failsafe: guarantee send button unlocks even if network drops
+      // Watchdog failsafe
       const watchdog = setTimeout(() => {
         if (isSending) {
           isSending = false;
@@ -327,11 +618,21 @@
         }
       }, 120000);
 
-      appendMsg('user', text);
-      history.push({role: 'user', content: text});
+      appendMsg('user', escapeHtml(text));
+      
+      // Thinking Mode handling
+      const mode = thinkModeSelect.value;
+      let payloadPrompt = text;
+      if (mode === 'off') {
+        payloadPrompt = text + '\n\n[Instruction: Answer directly, factually, and concisely without chain of thought or <think> tags.]';
+      } else if (mode === 'deep') {
+        payloadPrompt = text + '\n\n[Instruction: Think deeply, exhaustively explore edge cases, and detail step-by-step logic.]';
+      }
+
+      history.push({ role: 'user', content: payloadPrompt });
       if (history.length > 6) history = history.slice(-6);
 
-      const aiMsg = appendMsg('ai', '<span class="cursor">⚡ DeepSeek 32B is processing...</span>');
+      const aiMsg = appendMsg('ai', '<span class="cursor">⚡ Qwen 3.8 27B is processing...</span>');
       const statusTimer = setTimeout(() => {
         if (isSending && !aiMsg.querySelector('details') && !aiMsg.querySelector('div')) {
           aiMsg.innerHTML = '<span class="cursor">🧠 Thinking across Dual Tesla T4 GPUs...</span>';
@@ -345,7 +646,7 @@
           body: JSON.stringify({
             messages: history,
             max_tokens: 8192,
-            temperature: 0.6,
+            temperature: mode === 'off' ? 0.3 : 0.6,
             stream: true,
             use_rag: true
           })
@@ -363,7 +664,6 @@
 
         const contentType = res.headers.get('content-type') || '';
         if (contentType.includes('text/event-stream')) {
-          // SSE Real-Time Streaming Reader
           const reader = res.body.getReader();
           const decoder = new TextDecoder('utf-8');
           let reasoningBuffer = '';
@@ -385,7 +685,6 @@
               const trimmed = line.trim();
               if (!trimmed || trimmed.startsWith(':')) continue;
 
-              // Immediately break on [DONE] marker so reader doesn't hang on keep-alive connection
               if (trimmed === 'data: [DONE]') {
                 streamFinished = true;
                 break;
@@ -414,20 +713,16 @@
             }
           }
 
-          // Safely release reader stream lock
           try { await reader.cancel(); } catch(e) {}
 
-          // Finalize stream rendering
           renderLiveStream(aiMsg, reasoningBuffer, contentBuffer, false, true);
 
-          // Only store clean answer in history for rapid multi-turn prefill
           const cleanAnswer = contentBuffer || (reasoningBuffer ? reasoningBuffer : 'Done.');
           history.push({role: 'assistant', content: cleanAnswer});
           if (history.length > 6) history = history.slice(-6);
 
         } else {
           clearTimeout(statusTimer);
-          // Standard JSON Fallback
           const data = await res.json();
           const content = data.choices[0].message.content || data.choices[0].message.reasoning_content || '';
           history.push({role: 'assistant', content: content});
@@ -459,11 +754,10 @@
     function renderLiveStream(elem, reasoning, content, isThinkingNow, isFinished = false) {
       let html = '';
       if (reasoning) {
-        // While thinking, keep the box OPEN so the user watches live thoughts in real-time
         const isOpen = isThinkingNow || !content ? 'open' : '';
         const title = isThinkingNow 
-          ? '🧠 DeepSeek-R1 Thinking <span class="pulse-dot"></span> <small style="color:#38bdf8;">(Live stream)</small>' 
-          : '🧠 Thought Process ✓ <small style="color:#64748b;">(Click to collapse/expand)</small>';
+          ? '🧠 Qwen 3.8 Thinking <span class="pulse-dot"></span> <small style="color:#38bdf8;">(Live stream)</small>' 
+          : '🧠 Thought Process ✓ <small style="color:#64748b;">(Click to toggle)</small>';
         
         html += `<details class="think-box" ${isOpen}>
           <summary>${title}</summary>
@@ -472,14 +766,13 @@
       }
 
       if (content) {
-        html += `<div class="final-content">${formatText(content)}${isFinished ? '' : '<span class="cursor">▊</span>'}</div>`;
+        html += `<div class="final-content">${formatMarkdown(content)}${isFinished ? '' : '<span class="cursor">▊</span>'}</div>`;
       } else if (!reasoning) {
-        html += `<span class="cursor">🧠 DeepSeek-R1 is thinking across Dual Tesla T4 GPUs...</span>`;
+        html += `<span class="cursor">🧠 Swift-Qwen 27B is thinking across Dual Tesla T4 GPUs...</span>`;
       }
 
       elem.innerHTML = html;
 
-      // Auto-scroll the thinking pre box to bottom as new tokens arrive
       const pre = elem.querySelector('#thinkPre');
       if (pre && isThinkingNow) {
         pre.scrollTop = pre.scrollHeight;
@@ -504,7 +797,7 @@
         </details>`;
       }
       if (answer) {
-        html += `<div class="final-content">${formatText(answer)}</div>`;
+        html += `<div class="final-content">${formatMarkdown(answer)}</div>`;
       } else if (think) {
         html += `<div class="final-content" style="color: #94a3b8; font-style: italic;">(Response contained in thought process above)</div>`;
       }
@@ -512,14 +805,51 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
-    function formatText(t) {
-      return escapeHtml(t)
+    // High-Performance Markdown Formatter with Code Block Copying
+    function formatMarkdown(text) {
+      if (!text) return '';
+
+      // Extract code blocks first
+      const codeBlocks = [];
+      let str = text.replace(/```([a-zA-Z0-9_\-\+]*)\n([\s\S]*?)(?:```|$)/g, (match, lang, code) => {
+        const id = codeBlocks.length;
+        const language = (lang || 'code').trim();
+        const escaped = escapeHtml(code.trimEnd());
+        const blockHtml = `
+          <div class="code-wrapper">
+            <div class="code-header">
+              <span>${language}</span>
+              <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+            </div>
+            <pre><code>${escaped}</code></pre>
+          </div>
+        `;
+        codeBlocks.push(blockHtml);
+        return `___CODE_BLOCK_${id}___`;
+      });
+
+      // Escape raw text
+      str = escapeHtml(str);
+
+      // Restore code blocks
+      str = str.replace(/___CODE_BLOCK_(\d+)___/g, (match, id) => {
+        return codeBlocks[parseInt(id, 10)] || '';
+      });
+
+      // Inline markdown
+      str = str
+        .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/^> (.*$)/gim, '<blockquote class="quote">$1</blockquote>')
         .replace(/\n\n/g, '<br><br>')
-        .replace(/\n/g, '<br>')
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        .replace(/\n/g, '<br>');
+
+      return str;
     }
 
     function escapeHtml(s) {
+      if (!s) return '';
       return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
   </script>
